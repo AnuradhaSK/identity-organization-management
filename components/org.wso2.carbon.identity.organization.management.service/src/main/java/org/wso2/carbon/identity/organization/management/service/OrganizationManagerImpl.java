@@ -141,7 +141,7 @@ import static org.wso2.carbon.stratos.common.constants.TenantConstants.ErrorMess
 public class OrganizationManagerImpl implements OrganizationManager {
 
     @Override
-    public Organization addOrganization(Organization organization) throws
+    public Organization addOrganization(Organization organization, String orgCreatorID, String oregCreatorName) throws
             OrganizationManagementException {
 
         String tenantDomain = getTenantDomain();
@@ -152,8 +152,17 @@ public class OrganizationManagerImpl implements OrganizationManager {
         if (StringUtils.equals(TENANT.toString(),
                 organization.getType())) {
             tenantDomain = organization.getDomain();
-            tenantId = createTenant(tenantDomain);
+            // TODO passing the hardcorded domain of the tenant owner for now.
+            tenantId = createTenant(tenantDomain, orgCreatorID, oregCreatorName, "carbon.super");
         }
+        // Tenant created user should be the owner of that tenant.
+//        String tenantOwnerID = getUserId();
+        // Get the user's actual tenant domain.
+//        try {
+//            OrganizationManagementDataHolder.getInstance().getRealmService().getTenantUserRealm(tenantId);
+//        } catch (UserStoreException e) {
+//            throw new RuntimeException(e);
+//        }
         getOrganizationManagementDAO().addOrganization(tenantId, tenantDomain, organization);
         return organization;
     }
@@ -718,14 +727,14 @@ public class OrganizationManagerImpl implements OrganizationManager {
                 !attributeValue.equalsIgnoreCase(PAGINATION_BEFORE);
     }
 
-    private int createTenant(String domain) throws OrganizationManagementException {
+    private int createTenant(String domain, String orgCreatorID, String orgCreatorName, String tenantOwnerDomain) throws OrganizationManagementException {
 
         try {
             PrivilegedCarbonContext.startTenantFlow();
             PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(MultitenantConstants
                     .SUPER_TENANT_DOMAIN_NAME);
             PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(MultitenantConstants.SUPER_TENANT_ID);
-            getTenantMgtService().addTenant(createTenantInfoBean(domain));
+            getTenantMgtService().addTenant(createTenantInfoBean(domain, orgCreatorID, orgCreatorName, tenantOwnerDomain));
         } catch (TenantMgtException e) {
             if (e instanceof TenantManagementClientException) {
                 if (ERROR_CODE_EMPTY_EXTENSION.getCode().equals(e.getErrorCode())) {
@@ -745,13 +754,16 @@ public class OrganizationManagerImpl implements OrganizationManager {
         return IdentityTenantUtil.getTenantId(domain);
     }
 
-    private Tenant createTenantInfoBean(String domain) {
+    private Tenant createTenantInfoBean(String domain, String orgCreatorID, String orgCreatorName, String tenantOwnerDomain) {
 
         Tenant tenant = new Tenant();
         tenant.setActive(true);
         tenant.setDomain(domain);
-        tenant.setAdminName("dummyadmin");
+        tenant.setAdminName(orgCreatorID);
         tenant.setEmail("dummyadmin@email.com");
+        tenant.setTenantOwnerOrg(tenantOwnerDomain);
+        // TODO: check user existence and add the property. otherwise disable.
+        tenant.setExternalOwnerAssociation(true);
         // set the password as domain for now to avoid findbugs detecting it as a hardcoded value.
         tenant.setAdminPassword(domain);
         tenant.setProvisioningMethod(StringUtils.EMPTY);

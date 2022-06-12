@@ -37,7 +37,7 @@ public interface OrganizationManager {
      * @return The newly created organization.
      * @throws OrganizationManagementException The exception thrown when creating an organization.
      */
-    Organization addOrganization(Organization organization) throws OrganizationManagementException;
+    Organization addOrganization(Organization organization, String orgCreatorID, String oregCreatorName) throws OrganizationManagementException;
 
     /**
      * Check if the {@link Organization} exists by name.

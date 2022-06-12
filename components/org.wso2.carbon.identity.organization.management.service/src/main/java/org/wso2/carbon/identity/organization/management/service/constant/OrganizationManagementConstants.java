@@ -264,7 +264,13 @@ public class OrganizationManagementConstants {
         ERROR_CODE_ERROR_RETRIEVING_ROLE_NAMES("65028", "Unable to get role names.",
                 "Server encountered an error while retrieving role names."),
         ERROR_CODE_ERROR_RETRIEVING_DATA_FROM_IDENTITY_DB("65029", "Unable to retrieve data from Identity Database.",
-                "Server encountered an error while retrieving data from identity database.");
+                "Server encountered an error while retrieving data from identity database."),
+
+
+        ERROR_CODE_ERROR_ADDING_USER_TENANT_ASSOC("65201", "Unable to create the user tenant association.",
+                                                          "Server encountered an error while creating the association for user: %s , with tenant: %s."),
+        ERROR_CODE_ERROR_CHECKING_ACTIVE_USER_TENANT_ASSOC("65202", "Unable to search active ownership for given user tenant association.",
+                "Server encountered an error while searching active association for user: %s , with tenant: %s.");
 
 
         private final String code;

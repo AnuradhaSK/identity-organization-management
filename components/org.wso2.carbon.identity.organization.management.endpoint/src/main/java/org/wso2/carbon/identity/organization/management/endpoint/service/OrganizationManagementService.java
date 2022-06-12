@@ -217,8 +217,12 @@ public class OrganizationManagementService {
     public Response addOrganization(OrganizationPOSTRequest organizationPOSTRequest) {
 
         try {
+            // TODO: resolve tenant creator when org creation is done using bearer tokens obtained using client credential
+            String orgCreatorID = PrivilegedCarbonContext.getThreadLocalCarbonContext().getUserId(); //a0f3639e-431a-4c79-bd3e-f2d2f18a1f19
+            String orgCreatorName = PrivilegedCarbonContext.getThreadLocalCarbonContext().getUsername(); //anuradha
+
             Organization organization = getOrganizationManager().addOrganization(getOrganizationFromPostRequest
-                    (organizationPOSTRequest));
+                    (organizationPOSTRequest), orgCreatorID, orgCreatorName);
             String organizationId = organization.getId();
             return Response.created(getResourceLocation(organizationId)).entity
                     (getOrganizationResponse(organization)).build();
@@ -374,7 +378,6 @@ public class OrganizationManagementService {
             return handleUnexpectedServerError(throwable, LOG);
         }
     }
-
 
     private Organization getOrganizationFromPostRequest(OrganizationPOSTRequest organizationPOSTRequest) {
 
