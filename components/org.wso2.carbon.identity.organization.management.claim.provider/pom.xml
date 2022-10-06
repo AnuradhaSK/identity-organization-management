@@ -28,7 +28,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>org.wso2.carbon.identity.organization.management.claim.provider</artifactId>
-    <name>WSO2 - Organization Application Management</name>
+    <name>WSO2 - Organization Claim Provider</name>
     <packaging>bundle</packaging>
 
     <dependencies>

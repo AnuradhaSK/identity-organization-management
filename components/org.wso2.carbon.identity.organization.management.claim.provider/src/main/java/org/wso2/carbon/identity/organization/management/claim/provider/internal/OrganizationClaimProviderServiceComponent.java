@@ -45,7 +45,8 @@ public class OrganizationClaimProviderServiceComponent {
     protected void activate(ComponentContext context) {
 
         try {
-            context.getBundleContext().registerService(ClaimProvider.class.getName(), new OrganizationClaimProvider(), null);
+            context.getBundleContext()
+                    .registerService(ClaimProvider.class.getName(), new OrganizationClaimProvider(), null);
         } catch (Exception e) {
             LOG.error("Error when registering OrganizationClaimProvider service.", e);
         }
