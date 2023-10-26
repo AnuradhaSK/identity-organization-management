@@ -23,18 +23,24 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.identity.application.common.IdentityApplicationManagementException;
+import org.wso2.carbon.identity.application.common.model.ApplicationBasicInfo;
 import org.wso2.carbon.identity.application.common.model.RoleV2;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
+import org.wso2.carbon.identity.event.IdentityEventClientException;
 import org.wso2.carbon.identity.event.IdentityEventConstants;
 import org.wso2.carbon.identity.event.IdentityEventException;
 import org.wso2.carbon.identity.event.event.Event;
 import org.wso2.carbon.identity.event.handler.AbstractEventHandler;
+import org.wso2.carbon.identity.event.services.IdentityEventService;
 import org.wso2.carbon.identity.organization.management.application.OrgApplicationManager;
 import org.wso2.carbon.identity.organization.management.application.constant.OrgApplicationMgtConstants;
 import org.wso2.carbon.identity.organization.management.application.model.SharedApplication;
 import org.wso2.carbon.identity.organization.management.handler.internal.OrganizationManagementHandlerDataHolder;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
+import org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants;
+import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementClientException;
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementException;
+import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementServerException;
 import org.wso2.carbon.identity.organization.management.service.util.OrganizationManagementUtil;
 import org.wso2.carbon.identity.role.v2.mgt.core.RoleConstants;
 import org.wso2.carbon.identity.role.v2.mgt.core.RoleManagementService;
@@ -55,6 +61,7 @@ public class SharedRoleMgtHandler extends AbstractEventHandler {
 
     private static final Log LOG = LogFactory.getLog(SharedRoleMgtHandler.class);
     private final ExecutorService executorService = Executors.newFixedThreadPool(5);
+    private static final String CONSOLE_POST_SHARE_EVENT = "POST_SHARED_CONSOLE_APP";
 
     @Override
     public void handleEvent(Event event) throws IdentityEventException {
@@ -107,6 +114,16 @@ public class SharedRoleMgtHandler extends AbstractEventHandler {
                     createSharedRolesWithOrgAudience(associatedRolesOfApplication, mainAppTenantDomain,
                             sharedOrganizationId);
                     break;
+            }
+            /*
+            If the sharing main application is Console, fire an specific event.
+             */
+            ApplicationBasicInfo applicationBasicInfoByResourceId =
+                    getApplicationMgtService().getApplicationBasicInfoByResourceId(parentApplicationId,
+                            mainAppTenantDomain);
+            if ("Console".equalsIgnoreCase(applicationBasicInfoByResourceId.getApplicationName())) {
+                // Trigger event for console application sharing to an org.
+                fireEvent(CONSOLE_POST_SHARE_EVENT, eventProperties);
             }
         } catch (OrganizationManagementException | IdentityRoleManagementException |
                  IdentityApplicationManagementException e) {
@@ -262,5 +279,22 @@ public class SharedRoleMgtHandler extends AbstractEventHandler {
     private static ApplicationManagementService getApplicationMgtService() {
 
         return OrganizationManagementHandlerDataHolder.getInstance().getApplicationManagementService();
+    }
+
+    private void fireEvent(String eventName, Map<String, Object> eventProperties)
+            throws OrganizationManagementException {
+
+        IdentityEventService eventService =
+                OrganizationManagementHandlerDataHolder.getInstance().getIdentityEventService();
+        try {
+            Event event = new Event(eventName, eventProperties);
+            eventService.handleEvent(event);
+        } catch (IdentityEventClientException e) {
+            throw new OrganizationManagementClientException(e.getMessage(), e.getMessage(), e.getErrorCode(), e);
+        } catch (IdentityEventException e) {
+            throw new OrganizationManagementServerException(
+                    OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_FIRING_EVENTS.getMessage(),
+                    OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_FIRING_EVENTS.getCode(), e);
+        }
     }
 }
